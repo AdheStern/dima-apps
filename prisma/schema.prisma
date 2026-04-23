@@ -176,7 +176,7 @@ model Department {
 }
 
 // ============================================
-// ENUMS
+// ENUMS (boilerplate)
 // ============================================
 
 enum UserRole {
@@ -204,4 +204,253 @@ enum InvitationStatus {
   ACCEPTED
   REJECTED
   EXPIRED
+}
+
+// ============================================
+// PERFIL EXTENDIDO (datos de Microsoft Graph)
+// Poblado durante el callback OAuth de Microsoft.
+// No usa FK formal para no acoplar con better-auth.
+// ============================================
+
+model UserProfile {
+  id             String  @id @default(cuid())
+  userId         String  @unique // referencia al User.id de better-auth
+  department     String?
+  officeLocation String? // sede / región del ingeniero
+  jobTitle       String?
+  managerMsId    String? // Microsoft Object ID del manager
+  msObjectId     String? @unique
+
+  updatedAt DateTime @updatedAt
+
+  @@map("user_profiles")
+}
+
+// ============================================
+// SLA
+// ============================================
+
+model SlaType {
+  id                String @id @default(cuid())
+  name              String @unique // "24x7", "8x5", "12x5", etc.
+  description       String?
+  hoursPerDay       Int
+  daysPerWeek       Int
+  responseTimeHours Int    // compromiso de primera respuesta en horas
+
+  clients Client[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("sla_types")
+}
+
+// ============================================
+// CLIENTES
+// ============================================
+
+model Client {
+  id      String  @id @default(cuid())
+  name    String
+  ruc     String? @unique // RUC / RIF / NIT según el país
+  email   String?
+  phone   String?
+  address String?
+  active  Boolean @default(true)
+
+  slaTypeId String
+  slaType   SlaType @relation(fields: [slaTypeId], references: [id])
+
+  contacts       ClientContact[]
+  hourPackages   ClientHourPackage[]
+  supportTickets SupportTicket[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slaTypeId])
+  @@map("clients")
+}
+
+model ClientContact {
+  id       String  @id @default(cuid())
+  clientId String
+  client   Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  name      String
+  position  String? // cargo
+  email     String
+  phone     String?
+  isPrimary Boolean @default(false)
+
+  conformities ClientConformity[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clientId])
+  @@map("client_contacts")
+}
+
+// Historial de paquetes de horas compradas por cliente.
+// Horas disponibles = SUM(packages.hours) - SUM(tickets.totalHours WHERE status = COMPLETED)
+model ClientHourPackage {
+  id       String @id @default(cuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  hours        Decimal   @db.Decimal(10, 2)
+  purchaseDate DateTime  @default(now())
+  expiryDate   DateTime?
+  invoiceRef   String?   // referencia de factura
+  notes        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clientId])
+  @@map("client_hour_packages")
+}
+
+// ============================================
+// CATÁLOGO DE TIPOS DE SOPORTE
+// ============================================
+
+model SupportType {
+  id          String  @id @default(cuid())
+  name        String  @unique // "Correctivo", "Preventivo", "Instalación", etc.
+  description String?
+  active      Boolean @default(true)
+
+  tickets SupportTicket[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("support_types")
+}
+
+// ============================================
+// SOPORTES
+// ============================================
+
+model SupportTicket {
+  id           String        @id @default(cuid())
+  ticketNumber String        @unique // generado en app: DIMA-2026-00001
+
+  clientId      String
+  client        Client        @relation(fields: [clientId], references: [id])
+  supportTypeId String
+  supportType   SupportType   @relation(fields: [supportTypeId], references: [id])
+
+  // Referencias a User.id de better-auth sin FK formal
+  assignedById String // ingeniero que registra / asigna
+  assignedToId String // ingeniero encargado de ejecutar
+
+  shortDescription String
+  observations     String?
+
+  startTime DateTime?
+  endTime   DateTime?
+
+  // totalHours puede calcularse desde startTime/endTime o ingresarse manualmente.
+  // Si se ingresa manualmente, manualHours toma precedencia sobre el cálculo.
+  manualHours    Decimal? @db.Decimal(10, 2)
+  calculatedHours Decimal? @db.Decimal(10, 2) // persistido al cerrar el ticket
+  totalHours     Decimal? @db.Decimal(10, 2)  // campo final: manualHours ?? calculatedHours
+
+  status SupportStatus @default(PENDING)
+
+  documents  SupportDocument[]
+  pauseLogs  SupportPauseLog[]
+  conformity ClientConformity?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clientId])
+  @@index([supportTypeId])
+  @@index([assignedToId])
+  @@index([assignedById])
+  @@index([status])
+  @@map("support_tickets")
+}
+
+// Trazabilidad de pausas — permite calcular tiempo real trabajado
+model SupportPauseLog {
+  id              String        @id @default(cuid())
+  supportTicketId String
+  supportTicket   SupportTicket @relation(fields: [supportTicketId], references: [id], onDelete: Cascade)
+
+  pausedAt  DateTime
+  resumedAt DateTime?
+  reason    String?
+
+  @@index([supportTicketId])
+  @@map("support_pause_logs")
+}
+
+// ============================================
+// DOCUMENTOS ADJUNTOS
+// ============================================
+
+model SupportDocument {
+  id              String        @id @default(cuid())
+  supportTicketId String
+  supportTicket   SupportTicket @relation(fields: [supportTicketId], references: [id], onDelete: Cascade)
+
+  fileName      String
+  fileUrl       String   // ruta en storage (S3, filesystem, etc.)
+  mimeType      String?
+  fileSizeBytes Int?
+  uploadedById  String   // User.id de better-auth
+
+  createdAt DateTime @default(now())
+
+  @@index([supportTicketId])
+  @@map("support_documents")
+}
+
+// ============================================
+// CONFORMIDAD DEL CLIENTE (opcional por ticket)
+// Flujo: ticket completado → se genera approvalToken
+// → se envía email al contacto → cliente aprueba vía link
+// ============================================
+
+model ClientConformity {
+  id              String           @id @default(cuid())
+  supportTicketId String           @unique
+  supportTicket   SupportTicket    @relation(fields: [supportTicketId], references: [id], onDelete: Cascade)
+
+  contactId String?
+  contact   ClientContact? @relation(fields: [contactId], references: [id])
+
+  status         ConformityStatus @default(PENDING)
+  approvalToken  String?          @unique // token enviado por email para aprobar
+  tokenExpiresAt DateTime?
+  conformityDate DateTime?
+  notes          String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("client_conformities")
+}
+
+// ============================================
+// ENUMS (sistema de soportes)
+// ============================================
+
+enum SupportStatus {
+  PENDING   // Pendiente
+  REVIEW    // En revisión
+  PAUSED    // Pausado
+  COMPLETED // Completado
+}
+
+enum ConformityStatus {
+  PENDING  // Esperando respuesta del cliente
+  APPROVED // Cliente aprobó
+  REJECTED // Cliente rechazó / requiere revisión
 }
