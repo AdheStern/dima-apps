@@ -1,0 +1,16 @@
+name: alpaca-prod
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: alpaca-app-prod
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.production
+    environment:
+      - NODE_ENV=production
