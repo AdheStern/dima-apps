@@ -1,0 +1,207 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// MODELOS BASE BETTER AUTH
+// ============================================
+
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean
+  image         String?
+  phone         String?
+  birthDate     DateTime?
+  createdAt     DateTime
+  updatedAt     DateTime
+  
+  // Extensiones para administración
+  banned        Boolean?  @default(false)
+  banReason     String?
+  banExpires    DateTime?
+
+  
+  role          String    @default("USER")
+  status        String    @default("ACTIVE")
+  departmentId  String?
+  managerId     String?      // Auto-referencia para jerarquía
+  
+  // Relaciones Better Auth
+  sessions      Session[]
+  accounts      Account[]
+  
+  // Relaciones organizacionales
+  department    Department?        @relation("UserDepartment", fields: [departmentId], references: [id], onDelete: SetNull)
+  manager       User?              @relation("ManagerSubordinates", fields: [managerId], references: [id], onDelete: SetNull)
+  subordinates  User[]             @relation("ManagerSubordinates")
+  
+  // Relaciones con organizaciones
+  organizationMembers OrganizationMember[]
+  organizationInvitations OrganizationInvitation[]
+
+  @@unique([email])
+  @@index([departmentId])
+  @@index([managerId])
+  @@index([role])
+  @@index([status])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime
+  updatedAt             DateTime
+
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime?
+  updatedAt  DateTime?
+
+  @@map("verification")
+}
+
+// ============================================
+// MODELOS DE ORGANIZACIÓN (Organization Plugin)
+// ============================================
+
+model Organization {
+  id        String   @id
+  name      String
+  slug      String   @unique
+  logo      String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members      OrganizationMember[]
+  invitations  OrganizationInvitation[]
+
+  @@map("organization")
+}
+
+model OrganizationMember {
+  id             String       @id
+  organizationId String
+  userId         String
+  role           String       @default("MEMBER")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@index([organizationId])
+  @@map("organization_member")
+}
+
+model OrganizationInvitation {
+  id             String   @id
+  organizationId String
+  email          String
+  role           String   @default("MEMBER")
+  status         String   @default("PENDING")
+  inviterId      String
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inviter        User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, email])
+  @@index([email])
+  @@index([status])
+  @@map("organization_invitation")
+}
+
+// ============================================
+// MODELOS PERSONALIZADOS
+// ============================================
+
+model Department {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  parentId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent      Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Department[] @relation("DepartmentHierarchy")
+  users       User[]       @relation("UserDepartment")
+
+  @@index([parentId])
+  @@map("department")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  SUPERVISOR
+  USER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum OrgRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
