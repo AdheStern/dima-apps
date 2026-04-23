@@ -21,8 +21,8 @@ const audiowide = Audiowide({
 });
 
 export const metadata: Metadata = {
-  title: "Alpaca - Next.js Boilerplate",
-  description: "A Next.js boilerplate with TypeScript, Tailwind CSS, and more.",
+  title: "Dima Apps",
+  description: "Aplicaciones de DIMA",
 };
 
 export default function RootLayout({

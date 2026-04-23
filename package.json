@@ -1,5 +1,5 @@
 {
-  "name": "alpaca-nextjs-boilerplate",
+  "name": "dima-app",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -50,6 +50,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
+    "baseline-browser-mapping": "^2.10.21",
     "dotenv": "^17.2.3",
     "prisma": "6.19.0",
     "tailwindcss": "^4",

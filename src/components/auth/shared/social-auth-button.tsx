@@ -35,7 +35,7 @@ const PROVIDER_CONFIG: Record<
  */
 export function SocialAuthButton({
   provider,
-  callbackURL = "/alpaca",
+  callbackURL = "/dashboard",
 }: SocialAuthButtonProps) {
   const config = PROVIDER_CONFIG[provider];
   const Icon = config.icon;

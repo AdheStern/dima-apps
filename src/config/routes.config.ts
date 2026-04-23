@@ -5,7 +5,6 @@
  * Permite mantener consistencia en la nomenclatura de rutas
  */
 export const ROUTE_LABELS: Record<string, string> = {
-  alpaca: "ALPACA",
   dashboard: "Dashboard",
   settings: "Configuraciones",
   users: "Usuarios",
