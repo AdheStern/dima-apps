@@ -222,3 +222,296 @@ export interface OrganizationInvitation {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// ============================================================
+// ENUMS — definidos aquí para no depender del cliente Prisma generado
+// ============================================================
+
+export type SupportStatus = "PENDING" | "REVIEW" | "PAUSED" | "COMPLETED";
+export type ConformityStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+// ============================================================
+// SLA TYPES
+// ============================================================
+
+export interface CreateSlaTypeDTO {
+  name: string;
+  description?: string | null;
+  hoursPerDay: number;
+  daysPerWeek: number;
+  responseTimeHours: number;
+}
+
+export interface UpdateSlaTypeDTO {
+  id: string;
+  name?: string;
+  description?: string | null;
+  hoursPerDay?: number;
+  daysPerWeek?: number;
+  responseTimeHours?: number;
+}
+
+export interface SlaTypeWithRelations {
+  id: string;
+  name: string;
+  description: string | null;
+  hoursPerDay: number;
+  daysPerWeek: number;
+  responseTimeHours: number;
+  createdAt: Date;
+  updatedAt: Date;
+  _count: { clients: number };
+}
+
+// ============================================================
+// CLIENTS
+// ============================================================
+
+export interface CreateClientDTO {
+  name: string;
+  ruc?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  slaTypeId: string;
+}
+
+export interface UpdateClientDTO {
+  id: string;
+  name?: string;
+  ruc?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  slaTypeId?: string;
+  active?: boolean;
+}
+
+export interface ClientFilters {
+  search?: string;
+  slaTypeId?: string;
+  active?: boolean;
+}
+
+export interface ClientWithRelations {
+  id: string;
+  name: string;
+  ruc: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  active: boolean;
+  slaTypeId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  slaType: { id: string; name: string; responseTimeHours: number };
+  _count: { contacts: number; supportTickets: number };
+}
+
+export interface ClientDetail extends ClientWithRelations {
+  contacts: ClientContactWithRelations[];
+  hourPackages: ClientHourPackageWithRelations[];
+  totalPurchasedHours: number;
+  totalConsumedHours: number;
+  availableHours: number;
+}
+
+export interface CreateClientContactDTO {
+  clientId: string;
+  name: string;
+  position?: string | null;
+  email: string;
+  phone?: string | null;
+  isPrimary?: boolean;
+}
+
+export interface UpdateClientContactDTO {
+  id: string;
+  name?: string;
+  position?: string | null;
+  email?: string;
+  phone?: string | null;
+  isPrimary?: boolean;
+}
+
+export interface ClientContactWithRelations {
+  id: string;
+  clientId: string;
+  name: string;
+  position: string | null;
+  email: string;
+  phone: string | null;
+  isPrimary: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateClientHourPackageDTO {
+  clientId: string;
+  hours: number;
+  purchaseDate?: Date;
+  expiryDate?: Date | null;
+  invoiceRef?: string | null;
+  notes?: string | null;
+}
+
+export interface ClientHourPackageWithRelations {
+  id: string;
+  clientId: string;
+  hours: number;
+  purchaseDate: Date;
+  expiryDate: Date | null;
+  invoiceRef: string | null;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ============================================================
+// SUPPORT TYPES (CATALOG)
+// ============================================================
+
+export interface CreateSupportTypeDTO {
+  name: string;
+  description?: string | null;
+}
+
+export interface UpdateSupportTypeDTO {
+  id: string;
+  name?: string;
+  description?: string | null;
+  active?: boolean;
+}
+
+export interface SupportTypeWithRelations {
+  id: string;
+  name: string;
+  description: string | null;
+  active: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  _count: { tickets: number };
+}
+
+// ============================================================
+// SUPPORT TICKETS
+// ============================================================
+
+export interface CreateSupportTicketDTO {
+  clientId: string;
+  supportTypeId: string;
+  assignedById: string;
+  assignedToId: string;
+  shortDescription: string;
+  observations?: string | null;
+  startTime?: Date | null;
+  endTime?: Date | null;
+  manualHours?: number | null;
+  status?: SupportStatus;
+}
+
+export interface UpdateSupportTicketDTO {
+  id: string;
+  clientId?: string;
+  supportTypeId?: string;
+  assignedById?: string;
+  assignedToId?: string;
+  shortDescription?: string;
+  observations?: string | null;
+  startTime?: Date | null;
+  endTime?: Date | null;
+  manualHours?: number | null;
+  status?: SupportStatus;
+}
+
+export interface SupportTicketFilters {
+  search?: string;
+  clientId?: string;
+  supportTypeId?: string;
+  assignedToId?: string;
+  assignedById?: string;
+  status?: SupportStatus;
+  dateFrom?: Date;
+  dateTo?: Date;
+}
+
+export interface SupportTicketSummary {
+  id: string;
+  ticketNumber: string;
+  shortDescription: string;
+  status: SupportStatus;
+  startTime: Date | null;
+  endTime: Date | null;
+  totalHours: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+  client: { id: string; name: string };
+  supportType: { id: string; name: string };
+}
+
+export interface SupportDocumentWithRelations {
+  id: string;
+  supportTicketId: string;
+  fileName: string;
+  fileUrl: string;
+  mimeType: string | null;
+  fileSizeBytes: number | null;
+  uploadedById: string;
+  createdAt: Date;
+}
+
+export interface CreateSupportDocumentDTO {
+  supportTicketId: string;
+  fileName: string;
+  fileUrl: string;
+  mimeType?: string | null;
+  fileSizeBytes?: number | null;
+  uploadedById: string;
+}
+
+export interface ClientConformityWithRelations {
+  id: string;
+  supportTicketId: string;
+  contactId: string | null;
+  status: ConformityStatus;
+  approvalToken: string | null;
+  tokenExpiresAt: Date | null;
+  conformityDate: Date | null;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  contact: { id: string; name: string; email: string } | null;
+}
+
+export interface SupportTicketWithRelations {
+  id: string;
+  ticketNumber: string;
+  clientId: string;
+  supportTypeId: string;
+  assignedById: string;
+  assignedToId: string;
+  shortDescription: string;
+  observations: string | null;
+  startTime: Date | null;
+  endTime: Date | null;
+  manualHours: number | null;
+  calculatedHours: number | null;
+  totalHours: number | null;
+  status: SupportStatus;
+  createdAt: Date;
+  updatedAt: Date;
+  client: {
+    id: string;
+    name: string;
+    slaType: { name: string; responseTimeHours: number };
+  };
+  supportType: { id: string; name: string };
+  documents: SupportDocumentWithRelations[];
+  pauseLogs: {
+    id: string;
+    pausedAt: Date;
+    resumedAt: Date | null;
+    reason: string | null;
+  }[];
+  conformity: ClientConformityWithRelations | null;
+}
