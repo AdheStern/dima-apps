@@ -633,8 +633,12 @@ class SupportTicketService {
         };
       }
 
+      // Preserve the startTime already set on the ticket (retroactive registration).
+      // Only fall back to the argument or now if no startTime exists.
+      const effectiveStart = ticket.startTime ?? startTime ?? new Date();
+
       const updated = await this.ticketRepo.update(id, {
-        startTime: startTime ?? new Date(),
+        startTime: effectiveStart,
         status: "REVIEW",
       });
 
