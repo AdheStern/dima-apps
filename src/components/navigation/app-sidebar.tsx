@@ -28,8 +28,8 @@ const data = {
       icon: AppWindowIcon,
     },
     {
-      title: "Usuarios",
-      url: "/users",
+      title: "Administración de usuarios",
+      url: "/administration",
       icon: UsersIcon,
     },
     {

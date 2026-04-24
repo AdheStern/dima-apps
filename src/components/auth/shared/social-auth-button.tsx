@@ -3,8 +3,9 @@
 import { GoogleIcon } from "@/components/auth/shared/google-icon";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
+import { MicrosoftIcon } from "./microsoft-icon";
 
-type SocialProvider = "google";
+type SocialProvider = "google" | "microsoft";
 
 interface SocialAuthButtonProps {
   provider: SocialProvider;
@@ -26,6 +27,10 @@ const PROVIDER_CONFIG: Record<
   google: {
     icon: GoogleIcon,
     label: "Google",
+  },
+  microsoft: {
+    icon: MicrosoftIcon,
+    label: "Microsoft",
   },
 };
 
