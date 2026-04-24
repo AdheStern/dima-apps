@@ -81,6 +81,12 @@ function TicketActions({
             Iniciar
           </DropdownMenuItem>
         )}
+        {status === "PENDING" && ticket.startTime && ticket.endTime && (
+          <DropdownMenuItem onClick={() => onComplete(ticket)}>
+            <CheckCircle className="mr-2 h-4 w-4" />
+            Completar
+          </DropdownMenuItem>
+        )}
         {status === "REVIEW" && (
           <DropdownMenuItem onClick={() => onPause(ticket)}>
             <Pause className="mr-2 h-4 w-4" />
@@ -93,7 +99,7 @@ function TicketActions({
             Reanudar
           </DropdownMenuItem>
         )}
-        {status === "REVIEW" && (
+        {(status === "REVIEW" || status === "PAUSED") && (
           <DropdownMenuItem onClick={() => onComplete(ticket)}>
             <CheckCircle className="mr-2 h-4 w-4" />
             Completar
