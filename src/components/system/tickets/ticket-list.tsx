@@ -19,13 +19,13 @@ import {
 import type { UserWithRelations } from "@/lib/actions/types/action-types";
 import type { ClientWithRelations } from "@/lib/actions/types/client-types";
 import type { SupportTypeWithRelations } from "@/lib/actions/types/support-type-types";
-import type { SupportTicketWithRelations } from "@/lib/actions/types/support-ticket-types";
+import type { SupportTicketSummary } from "@/lib/actions/types/support-ticket-types";
 import { createTicketColumns } from "./ticket-columns";
 import { TicketFormDrawer } from "./ticket-form-drawer";
 import { TicketStatsCard } from "./ticket-stats-card";
 
 interface TicketListProps {
-  tickets: SupportTicketWithRelations[];
+  tickets: SupportTicketSummary[];
   clients: ClientWithRelations[];
   supportTypes: SupportTypeWithRelations[];
   users: UserWithRelations[];
@@ -53,7 +53,7 @@ export function TicketList({
   const [activeTab, setActiveTab] = useState("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] =
-    useState<SupportTicketWithRelations | null>(null);
+    useState<SupportTicketSummary | null>(null);
 
   const usersMap = Object.fromEntries(users.map((u) => [u.id, u.name]));
 
@@ -74,17 +74,17 @@ export function TicketList({
     return result;
   };
 
-  const handleEdit = (ticket: SupportTicketWithRelations) => {
+  const handleEdit = (ticket: SupportTicketSummary) => {
     setSelectedTicket(ticket);
     setIsFormOpen(true);
   };
 
-  const handleViewDetail = (ticket: SupportTicketWithRelations) => {
+  const handleViewDetail = (ticket: SupportTicketSummary) => {
     setSelectedTicket(ticket);
     setIsFormOpen(true);
   };
 
-  const handleStart = async (ticket: SupportTicketWithRelations) => {
+  const handleStart = async (ticket: SupportTicketSummary) => {
     const result = await startTicket(ticket.id);
     if (result.success) {
       toast.success("Ticket iniciado");
@@ -94,7 +94,7 @@ export function TicketList({
     }
   };
 
-  const handlePause = async (ticket: SupportTicketWithRelations) => {
+  const handlePause = async (ticket: SupportTicketSummary) => {
     const result = await pauseTicket(ticket.id);
     if (result.success) {
       toast.success("Ticket pausado");
@@ -104,7 +104,7 @@ export function TicketList({
     }
   };
 
-  const handleResume = async (ticket: SupportTicketWithRelations) => {
+  const handleResume = async (ticket: SupportTicketSummary) => {
     const result = await resumeTicket(ticket.id);
     if (result.success) {
       toast.success("Ticket reanudado");
@@ -114,7 +114,7 @@ export function TicketList({
     }
   };
 
-  const handleComplete = async (ticket: SupportTicketWithRelations) => {
+  const handleComplete = async (ticket: SupportTicketSummary) => {
     const result = await completeTicket(ticket.id);
     if (result.success) {
       toast.success("Ticket completado");

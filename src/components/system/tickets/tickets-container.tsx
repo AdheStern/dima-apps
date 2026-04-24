@@ -12,7 +12,7 @@ import { getSupportTickets } from "@/lib/actions/support-ticket-actions";
 import type { UserWithRelations } from "@/lib/actions/types/action-types";
 import type { ClientWithRelations } from "@/lib/actions/types/client-types";
 import type { SupportTypeWithRelations } from "@/lib/actions/types/support-type-types";
-import type { SupportTicketWithRelations } from "@/lib/actions/types/support-ticket-types";
+import type { SupportTicketSummary } from "@/lib/actions/types/support-ticket-types";
 import { TicketList } from "./ticket-list";
 
 interface TicketsContainerProps {
@@ -20,7 +20,7 @@ interface TicketsContainerProps {
 }
 
 export function TicketsContainer({ currentUserId }: TicketsContainerProps) {
-  const [tickets, setTickets] = useState<SupportTicketWithRelations[]>([]);
+  const [tickets, setTickets] = useState<SupportTicketSummary[]>([]);
   const [clients, setClients] = useState<ClientWithRelations[]>([]);
   const [supportTypes, setSupportTypes] = useState<SupportTypeWithRelations[]>(
     [],
