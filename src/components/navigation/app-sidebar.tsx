@@ -2,8 +2,12 @@
 
 import {
   AppWindowIcon,
+  BookOpenIcon,
+  Building2Icon,
   CommandIcon,
+  HeadphonesIcon,
   SettingsIcon,
+  ShieldCheckIcon,
   UsersIcon,
 } from "lucide-react";
 import type * as React from "react";
@@ -28,9 +32,24 @@ const data = {
       icon: AppWindowIcon,
     },
     {
-      title: "Usuarios",
-      url: "/users",
-      icon: UsersIcon,
+      title: "Soportes",
+      url: "/tickets",
+      icon: HeadphonesIcon,
+    },
+    {
+      title: "Clientes",
+      url: "/clients",
+      icon: Building2Icon,
+    },
+    {
+      title: "Administración",
+      url: "/administration",
+      icon: ShieldCheckIcon,
+      items: [
+        { title: "Usuarios", url: "/administration" },
+        { title: "Tipos de SLA", url: "/administration/sla-types" },
+        { title: "Tipos de Soporte", url: "/administration/support-types" },
+      ],
     },
     {
       title: "Configuraciones",
@@ -56,8 +75,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <CommandIcon className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">Alpaca</span>
-                  <span className="truncate text-xs">Boilerplate</span>
+                  <span className="truncate font-medium">DIMA</span>
+                  <span className="truncate text-xs">Sistema de Soportes</span>
                 </div>
               </a>
             </SidebarMenuButton>
@@ -73,3 +92,4 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     </Sidebar>
   );
 }
+

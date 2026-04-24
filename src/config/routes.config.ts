@@ -5,10 +5,15 @@
  * Permite mantener consistencia en la nomenclatura de rutas
  */
 export const ROUTE_LABELS: Record<string, string> = {
-  alpaca: "ALPACA",
+  dima: "DIMA",
   dashboard: "Dashboard",
   settings: "Configuraciones",
   users: "Usuarios",
+  clients: "Clientes",
+  tickets: "Soportes",
+  administration: "Administración",
+  "sla-types": "Tipos de SLA",
+  "support-types": "Tipos de Soporte",
 };
 
 /**
