@@ -4,12 +4,12 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
+import type { ActionResult } from "./types/action-types";
 import type {
-  ActionResult,
   CreateSupportTypeDTO,
   SupportTypeWithRelations,
   UpdateSupportTypeDTO,
-} from "./types/action-types";
+} from "./types/support-type-types";
 
 class SupportTypeRepository {
   private readonly include = {

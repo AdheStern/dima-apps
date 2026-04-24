@@ -6,6 +6,10 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import type {
   ActionResult,
+  PaginatedResult,
+  PaginationParams,
+} from "./types/action-types";
+import type {
   ClientContactWithRelations,
   ClientDetail,
   ClientFilters,
@@ -14,11 +18,9 @@ import type {
   CreateClientContactDTO,
   CreateClientDTO,
   CreateClientHourPackageDTO,
-  PaginatedResult,
-  PaginationParams,
   UpdateClientContactDTO,
   UpdateClientDTO,
-} from "./types/action-types";
+} from "./types/client-types";
 
 // biome-ignore lint/suspicious/noExplicitAny: Prisma.Decimal no disponible hasta prisma generate
 const decimalToNumber = (d: any): number | null =>

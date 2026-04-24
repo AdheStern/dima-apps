@@ -7,17 +7,19 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import type {
   ActionResult,
+  PaginatedResult,
+  PaginationParams,
+} from "./types/action-types";
+import type {
   ClientConformityWithRelations,
   CreateSupportDocumentDTO,
   CreateSupportTicketDTO,
-  PaginatedResult,
-  PaginationParams,
   SupportDocumentWithRelations,
   SupportTicketFilters,
   SupportTicketSummary,
   SupportTicketWithRelations,
   UpdateSupportTicketDTO,
-} from "./types/action-types";
+} from "./types/support-ticket-types";
 
 // biome-ignore lint/suspicious/noExplicitAny: Prisma.Decimal no disponible hasta prisma generate
 const decimalToNumber = (d: any): number | null =>

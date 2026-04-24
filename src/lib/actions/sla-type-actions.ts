@@ -4,12 +4,12 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
+import type { ActionResult } from "./types/action-types";
 import type {
-  ActionResult,
   CreateSlaTypeDTO,
   SlaTypeWithRelations,
   UpdateSlaTypeDTO,
-} from "./types/action-types";
+} from "./types/sla-type-types";
 
 class SlaTypeRepository {
   private readonly include = {
