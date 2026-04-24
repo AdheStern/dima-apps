@@ -25,17 +25,113 @@ import type {
 const decimalToNumber = (d: any): number | null =>
   d != null ? Number(d.toString()) : null;
 
-function calcHoursFromRange(
+// ---- Cálculo de horas con horario laboral Bolivia (UTC-4, L-S 8:30–16:30) ----
+
+const BOLIVIA_OFFSET_MS = -4 * 60 * 60 * 1000;
+const OFFICE_OPEN_MIN = 8 * 60 + 30;   // 510 min desde medianoche
+const OFFICE_CLOSE_MIN = 16 * 60 + 30; // 990 min desde medianoche
+
+function toBoliviaDate(utcDate: Date): Date {
+  return new Date(utcDate.getTime() + BOLIVIA_OFFSET_MS);
+}
+
+function ceilToHalfHour(minutes: number): number {
+  if (minutes <= 0) return 0;
+  return Math.ceil(minutes / 30) * 0.5;
+}
+
+function splitIntervalBolivia(
+  startBol: Date,
+  endBol: Date,
+): { officeMin: number; extraMin: number } {
+  if (startBol >= endBol) return { officeMin: 0, extraMin: 0 };
+
+  const breakpoints: Date[] = [startBol];
+
+  const cursor = new Date(startBol);
+  cursor.setHours(0, 0, 0, 0);
+
+  while (cursor <= endBol) {
+    const open = new Date(cursor);
+    open.setHours(8, 30, 0, 0);
+    if (open > startBol && open < endBol) breakpoints.push(new Date(open));
+
+    const close = new Date(cursor);
+    close.setHours(16, 30, 0, 0);
+    if (close > startBol && close < endBol) breakpoints.push(new Date(close));
+
+    cursor.setDate(cursor.getDate() + 1);
+    cursor.setHours(0, 0, 0, 0);
+    if (cursor > startBol && cursor < endBol) breakpoints.push(new Date(cursor));
+  }
+
+  breakpoints.push(endBol);
+  breakpoints.sort((a, b) => a.getTime() - b.getTime());
+
+  let officeMin = 0;
+  let extraMin = 0;
+
+  for (let i = 0; i < breakpoints.length - 1; i++) {
+    const seg = breakpoints[i];
+    const segEnd = breakpoints[i + 1];
+    const durationMin = (segEnd.getTime() - seg.getTime()) / 60000;
+    if (durationMin <= 0) continue;
+
+    const midMs = (seg.getTime() + segEnd.getTime()) / 2;
+    const mid = new Date(midMs);
+    const day = mid.getDay();
+    const minOfDay = mid.getHours() * 60 + mid.getMinutes();
+    const inOffice =
+      day >= 1 && day <= 6 && minOfDay >= OFFICE_OPEN_MIN && minOfDay < OFFICE_CLOSE_MIN;
+
+    if (inOffice) officeMin += durationMin;
+    else extraMin += durationMin;
+  }
+
+  return { officeMin, extraMin };
+}
+
+function calcHoursBreakdown(
   startTime: Date,
   endTime: Date,
   pauseLogs: { pausedAt: Date; resumedAt: Date | null }[],
-): number {
-  const totalMs = endTime.getTime() - startTime.getTime();
-  const pausedMs = pauseLogs.reduce((sum, log) => {
-    if (!log.resumedAt) return sum;
-    return sum + (log.resumedAt.getTime() - log.pausedAt.getTime());
-  }, 0);
-  return Math.max(0, (totalMs - pausedMs) / (1000 * 60 * 60));
+): { totalHours: number; officeHours: number; extraHours: number } {
+  const sorted = [...pauseLogs].sort(
+    (a, b) => a.pausedAt.getTime() - b.pausedAt.getTime(),
+  );
+
+  const activeIntervals: [Date, Date][] = [];
+  let current = new Date(startTime);
+
+  for (const pause of sorted) {
+    if (pause.pausedAt > current && pause.pausedAt <= endTime) {
+      activeIntervals.push([current, pause.pausedAt]);
+    }
+    if (pause.resumedAt && pause.resumedAt > current) {
+      current = pause.resumedAt;
+    } else if (!pause.resumedAt) {
+      current = new Date(endTime);
+      break;
+    }
+  }
+
+  if (current < endTime) activeIntervals.push([current, endTime]);
+
+  let totalOfficeMin = 0;
+  let totalExtraMin = 0;
+
+  for (const [iStart, iEnd] of activeIntervals) {
+    const { officeMin, extraMin } = splitIntervalBolivia(
+      toBoliviaDate(iStart),
+      toBoliviaDate(iEnd),
+    );
+    totalOfficeMin += officeMin;
+    totalExtraMin += extraMin;
+  }
+
+  const officeHours = ceilToHalfHour(totalOfficeMin);
+  const extraHours = ceilToHalfHour(totalExtraMin);
+  return { totalHours: officeHours + extraHours, officeHours, extraHours };
 }
 
 const ticketInclude = {
@@ -425,13 +521,16 @@ class SupportTicketService {
   private documentRepo = new SupportDocumentRepository();
   private conformityRepo = new ConformityRepository();
 
-  private mapTicket(ticket: Awaited<ReturnType<typeof db.supportTicket.findUnique>> & Record<string, unknown>) {
+  // biome-ignore lint/suspicious/noExplicitAny: Prisma.Decimal no disponible hasta prisma generate
+  private mapTicket(ticket: any) {
     if (!ticket) return ticket;
     return {
       ...ticket,
-      manualHours: decimalToNumber((ticket as Record<string, unknown>).manualHours),
-      calculatedHours: decimalToNumber((ticket as Record<string, unknown>).calculatedHours),
-      totalHours: decimalToNumber((ticket as Record<string, unknown>).totalHours),
+      manualHours: decimalToNumber(ticket.manualHours),
+      calculatedHours: decimalToNumber(ticket.calculatedHours),
+      totalHours: decimalToNumber(ticket.totalHours),
+      officeHours: decimalToNumber(ticket.officeHours),
+      extraHours: decimalToNumber(ticket.extraHours),
     };
   }
 
@@ -641,60 +740,66 @@ class SupportTicketService {
     }
   }
 
-  async completeTicket(
-    id: string,
-    data: { endTime?: Date; manualHours?: number | null; observations?: string | null },
-  ): Promise<ActionResult<SupportTicketWithRelations>> {
+  async completeTicket(id: string): Promise<ActionResult<SupportTicketWithRelations>> {
     try {
       const ticket = await this.ticketRepo.findById(id);
       if (!ticket) {
-        return {
-          success: false,
-          error: "Soporte no encontrado",
-          code: "NOT_FOUND",
-        };
+        return { success: false, error: "Soporte no encontrado", code: "NOT_FOUND" };
       }
 
       if (ticket.status === "COMPLETED") {
-        return {
-          success: false,
-          error: "El soporte ya está completado",
-          code: "ALREADY_COMPLETED",
-        };
+        return { success: false, error: "El soporte ya está completado", code: "ALREADY_COMPLETED" };
       }
+
+      const now = new Date();
 
       // Cierra cualquier pausa activa
       await db.supportPauseLog.updateMany({
         where: { supportTicketId: id, resumedAt: null },
-        data: { resumedAt: new Date() },
+        data: { resumedAt: now },
       });
 
-      const endTime = data.endTime ?? new Date();
+      const effectiveEndTime = ticket.endTime ?? now;
+
       const pauseLogs = await db.supportPauseLog.findMany({
         where: { supportTicketId: id },
         select: { pausedAt: true, resumedAt: true },
       });
 
-      let calculatedHours: number | null = null;
-      const startTime = ticket.startTime ?? null;
-      if (startTime) {
-        calculatedHours = calcHoursFromRange(startTime, endTime, pauseLogs);
-      }
+      // biome-ignore lint/suspicious/noExplicitAny: Prisma.Decimal no disponible hasta prisma generate
+      const existingManualHours = decimalToNumber((ticket as any).manualHours);
 
-      const manualHours = data.manualHours ?? null;
-      const totalHours = manualHours ?? calculatedHours;
+      let totalHours: number;
+      let officeHours: number | null = null;
+      let extraHours: number | null = null;
+      let calculatedHours: number | null = null;
+
+      if (existingManualHours != null) {
+        // Horas manuales ya fijadas: úsalas directamente (sin desglose oficina/extra)
+        totalHours = existingManualHours;
+      } else if (ticket.startTime) {
+        const breakdown = calcHoursBreakdown(ticket.startTime, effectiveEndTime, pauseLogs);
+        totalHours = breakdown.totalHours;
+        officeHours = breakdown.officeHours;
+        extraHours = breakdown.extraHours;
+        calculatedHours = breakdown.totalHours;
+      } else {
+        return {
+          success: false,
+          error: "El ticket no tiene tiempo de inicio. Use 'Iniciar' antes de completar.",
+          code: "NO_START_TIME",
+        };
+      }
 
       const updated = await db.supportTicket.update({
         where: { id },
         data: {
-          endTime,
+          endTime: effectiveEndTime,
           status: "COMPLETED",
           calculatedHours: calculatedHours ?? undefined,
-          manualHours: manualHours ?? undefined,
-          totalHours: totalHours ?? undefined,
-          ...(data.observations !== undefined && {
-            observations: data.observations,
-          }),
+          totalHours,
+          officeHours: officeHours ?? undefined,
+          extraHours: extraHours ?? undefined,
         },
         include: ticketInclude,
       });
@@ -967,10 +1072,8 @@ class SupportTicketService {
       );
       const { page = 1, pageSize = 20 } = pagination;
 
-      const mapped = data.map((t) => ({
-        ...t,
-        totalHours: decimalToNumber((t as Record<string, unknown>).totalHours),
-      }));
+      // biome-ignore lint/suspicious/noExplicitAny: Prisma.Decimal no disponible hasta prisma generate
+      const mapped = data.map((t) => this.mapTicket(t as any));
 
       return {
         success: true,
@@ -1015,11 +1118,8 @@ export async function resumeTicket(id: string) {
   return supportTicketService.resumeTicket(id);
 }
 
-export async function completeTicket(
-  id: string,
-  data: { endTime?: Date; manualHours?: number | null; observations?: string | null },
-) {
-  return supportTicketService.completeTicket(id, data);
+export async function completeTicket(id: string) {
+  return supportTicketService.completeTicket(id);
 }
 
 export async function addSupportDocument(dto: CreateSupportDocumentDTO) {

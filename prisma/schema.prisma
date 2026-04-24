@@ -354,11 +354,12 @@ model SupportTicket {
   startTime DateTime?
   endTime   DateTime?
 
-  // totalHours puede calcularse desde startTime/endTime o ingresarse manualmente.
-  // Si se ingresa manualmente, manualHours toma precedencia sobre el cálculo.
-  manualHours    Decimal? @db.Decimal(10, 2)
-  calculatedHours Decimal? @db.Decimal(10, 2) // persistido al cerrar el ticket
-  totalHours     Decimal? @db.Decimal(10, 2)  // campo final: manualHours ?? calculatedHours
+  // totalHours = officeHours + extraHours (calculado al cerrar; manualHours lo sobreescribe)
+  manualHours     Decimal? @db.Decimal(10, 2)
+  calculatedHours Decimal? @db.Decimal(10, 2)
+  totalHours      Decimal? @db.Decimal(10, 2)
+  officeHours     Decimal? @db.Decimal(10, 2) // horas en horario laboral (L-S 8:30–16:30 BOT)
+  extraHours      Decimal? @db.Decimal(10, 2) // horas fuera de horario laboral
 
   status SupportStatus @default(PENDING)
 
