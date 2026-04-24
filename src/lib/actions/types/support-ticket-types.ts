@@ -48,7 +48,13 @@ export interface SupportTicketSummary {
   status: SupportStatus;
   startTime: Date | null;
   endTime: Date | null;
+  manualHours: number | null;
+  calculatedHours: number | null;
   totalHours: number | null;
+  officeHours: number | null;
+  extraHours: number | null;
+  assignedById: string;
+  assignedToId: string;
   createdAt: Date;
   updatedAt: Date;
   client: { id: string; name: string };
@@ -103,6 +109,8 @@ export interface SupportTicketWithRelations {
   manualHours: number | null;
   calculatedHours: number | null;
   totalHours: number | null;
+  officeHours: number | null;
+  extraHours: number | null;
   status: SupportStatus;
   createdAt: Date;
   updatedAt: Date;

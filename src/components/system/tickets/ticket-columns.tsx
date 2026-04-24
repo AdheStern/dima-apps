@@ -24,17 +24,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { SupportTicketWithRelations } from "@/lib/actions/types/support-ticket-types";
+import type { SupportTicketSummary } from "@/lib/actions/types/support-ticket-types";
 
 interface TicketActionsProps {
-  ticket: SupportTicketWithRelations;
+  ticket: SupportTicketSummary;
   usersMap: Record<string, string>;
-  onEdit: (ticket: SupportTicketWithRelations) => void;
-  onViewDetail: (ticket: SupportTicketWithRelations) => void;
-  onStart: (ticket: SupportTicketWithRelations) => void;
-  onPause: (ticket: SupportTicketWithRelations) => void;
-  onResume: (ticket: SupportTicketWithRelations) => void;
-  onComplete: (ticket: SupportTicketWithRelations) => void;
+  onEdit: (ticket: SupportTicketSummary) => void;
+  onViewDetail: (ticket: SupportTicketSummary) => void;
+  onStart: (ticket: SupportTicketSummary) => void;
+  onPause: (ticket: SupportTicketSummary) => void;
+  onResume: (ticket: SupportTicketSummary) => void;
+  onComplete: (ticket: SupportTicketSummary) => void;
 }
 
 function TicketActions({
@@ -105,14 +105,14 @@ function TicketActions({
 }
 
 export function createTicketColumns(
-  onEdit: (ticket: SupportTicketWithRelations) => void,
-  onViewDetail: (ticket: SupportTicketWithRelations) => void,
-  onStart: (ticket: SupportTicketWithRelations) => void,
-  onPause: (ticket: SupportTicketWithRelations) => void,
-  onResume: (ticket: SupportTicketWithRelations) => void,
-  onComplete: (ticket: SupportTicketWithRelations) => void,
+  onEdit: (ticket: SupportTicketSummary) => void,
+  onViewDetail: (ticket: SupportTicketSummary) => void,
+  onStart: (ticket: SupportTicketSummary) => void,
+  onPause: (ticket: SupportTicketSummary) => void,
+  onResume: (ticket: SupportTicketSummary) => void,
+  onComplete: (ticket: SupportTicketSummary) => void,
   usersMap: Record<string, string>,
-): ColumnDef<SupportTicketWithRelations>[] {
+): ColumnDef<SupportTicketSummary>[] {
   return [
     {
       accessorKey: "ticketNumber",
@@ -174,13 +174,22 @@ export function createTicketColumns(
     {
       accessorKey: "totalHours",
       header: "Horas",
-      cell: ({ row }) => (
-        <span className="text-sm">
-          {row.original.totalHours != null
-            ? `${Number(row.original.totalHours).toFixed(1)}h`
-            : "—"}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const { totalHours, officeHours, extraHours } = row.original;
+        if (totalHours == null) return <span className="text-xs text-muted-foreground">—</span>;
+        return (
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">{Number(totalHours).toFixed(1)}h</span>
+            {(officeHours != null || extraHours != null) && (
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                {officeHours != null && `${Number(officeHours).toFixed(1)}of`}
+                {officeHours != null && extraHours != null && " · "}
+                {extraHours != null && extraHours > 0 && `${Number(extraHours).toFixed(1)}ex`}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       id: "actions",

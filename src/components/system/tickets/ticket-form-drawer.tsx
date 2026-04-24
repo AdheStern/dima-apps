@@ -41,7 +41,7 @@ import {
 import type { UserWithRelations } from "@/lib/actions/types/action-types";
 import type { ClientWithRelations } from "@/lib/actions/types/client-types";
 import type { SupportTypeWithRelations } from "@/lib/actions/types/support-type-types";
-import type { SupportTicketWithRelations } from "@/lib/actions/types/support-ticket-types";
+import type { SupportTicketSummary } from "@/lib/actions/types/support-ticket-types";
 
 const schema = z.object({
   clientId: z.string().min(1, "El cliente es requerido"),
@@ -55,12 +55,6 @@ const schema = z.object({
   observations: z.string().max(2000).optional(),
   startTime: z.string().optional(),
   endTime: z.string().optional(),
-  manualHours: z.coerce
-    .number()
-    .min(0)
-    .max(9999)
-    .nullable()
-    .optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -68,7 +62,7 @@ type FormValues = z.infer<typeof schema>;
 interface TicketFormDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  ticket?: SupportTicketWithRelations | null;
+  ticket?: SupportTicketSummary | null;
   clients: ClientWithRelations[];
   supportTypes: SupportTypeWithRelations[];
   users: UserWithRelations[];
@@ -107,7 +101,6 @@ export function TicketFormDrawer({
       observations: "",
       startTime: "",
       endTime: "",
-      manualHours: null,
     },
   });
 
@@ -124,7 +117,6 @@ export function TicketFormDrawer({
               observations: ticket.observations ?? "",
               startTime: toDatetimeLocal(ticket.startTime),
               endTime: toDatetimeLocal(ticket.endTime),
-              manualHours: ticket.manualHours ?? null,
             }
           : {
               clientId: "",
@@ -135,7 +127,6 @@ export function TicketFormDrawer({
               observations: "",
               startTime: "",
               endTime: "",
-              manualHours: null,
             },
       );
     }
@@ -146,7 +137,6 @@ export function TicketFormDrawer({
     try {
       const startTime = values.startTime ? new Date(values.startTime) : null;
       const endTime = values.endTime ? new Date(values.endTime) : null;
-      const manualHours = values.manualHours ?? null;
 
       const result =
         isEdit && ticket
@@ -160,7 +150,6 @@ export function TicketFormDrawer({
               observations: values.observations || null,
               startTime,
               endTime,
-              manualHours,
             })
           : await createSupportTicket({
               clientId: values.clientId,
@@ -171,7 +160,6 @@ export function TicketFormDrawer({
               observations: values.observations || null,
               startTime,
               endTime,
-              manualHours,
             });
 
       if (result.success) {
@@ -326,35 +314,6 @@ export function TicketFormDrawer({
                 )}
               />
             </div>
-
-            <FormField
-              control={form.control}
-              name="manualHours"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Horas manuales</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={0}
-                      max={9999}
-                      step={0.5}
-                      placeholder="0.0"
-                      value={field.value ?? ""}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value === "" ? null : e.target.value,
-                        )
-                      }
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Sobreescribe el cálculo automático. Opcional.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
