@@ -3,8 +3,9 @@
 import { GoogleIcon } from "@/components/auth/shared/google-icon";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
+import { MicrosoftIcon } from "./microsoft-icon";
 
-type SocialProvider = "google";
+type SocialProvider = "google" | "microsoft";
 
 interface SocialAuthButtonProps {
   provider: SocialProvider;
@@ -27,6 +28,10 @@ const PROVIDER_CONFIG: Record<
     icon: GoogleIcon,
     label: "Google",
   },
+  microsoft: {
+    icon: MicrosoftIcon,
+    label: "Microsoft",
+  },
 };
 
 /**
@@ -35,7 +40,7 @@ const PROVIDER_CONFIG: Record<
  */
 export function SocialAuthButton({
   provider,
-  callbackURL = "/alpaca",
+  callbackURL = "/dashboard",
 }: SocialAuthButtonProps) {
   const config = PROVIDER_CONFIG[provider];
   const Icon = config.icon;

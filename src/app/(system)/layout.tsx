@@ -4,7 +4,7 @@ import { AppSidebar } from "@/components/navigation/app-sidebar";
 import { SiteHeader } from "@/components/navigation/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
-export default function AlpacaLayout({
+export default function DimaLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;

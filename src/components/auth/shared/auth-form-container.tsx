@@ -45,7 +45,7 @@ export function AuthFormContainer({
         </span>
       </div>
 
-      <SocialAuthButton provider="google" />
+      <SocialAuthButton provider="microsoft" />
 
       <div className="text-center text-sm">
         {footerText}{" "}

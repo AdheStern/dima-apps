@@ -53,7 +53,7 @@ interface BreadcrumbItemWrapperProps {
 }
 
 function BreadcrumbItemWrapper({ item, isLast }: BreadcrumbItemWrapperProps) {
-  const isAlpacaRoot = item.label === "ALPACA";
+  const isDimaRoot = item.label === "DIMA";
 
   return (
     <>
@@ -64,14 +64,12 @@ function BreadcrumbItemWrapper({ item, isLast }: BreadcrumbItemWrapperProps) {
           <BreadcrumbLink
             asChild
             className={
-              isAlpacaRoot
+              isDimaRoot
                 ? "flex items-center gap-2 font-2xl hover:text-green-500"
                 : undefined
             }
             style={
-              isAlpacaRoot
-                ? { fontFamily: "'Audiowide', sans-serif" }
-                : undefined
+              isDimaRoot ? { fontFamily: "'Audiowide', sans-serif" } : undefined
             }
           >
             <Link href={item.href}>{item.label}</Link>

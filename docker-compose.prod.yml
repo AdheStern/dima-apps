@@ -1,4 +1,4 @@
-name: alpaca-prod
+name: dima-prod
 
 services:
   app:
@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: production
-    container_name: alpaca-app-prod
+    container_name: dima-app-prod
     restart: always
     ports:
       - "3000:3000"
